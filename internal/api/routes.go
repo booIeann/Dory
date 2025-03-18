@@ -7,6 +7,4 @@ func SetupAPIRoutes(app *fiber.App) {
 
 	api.Post("/login", LoginHandler)
 	api.Get("/logout", LogoutHandler)
-
-	api.Use(ValidateTokenMiddleware)
 }
