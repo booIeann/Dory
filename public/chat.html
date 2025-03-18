@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Chat</title>
+    <style>
+        #chat {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            padding: 10px;
+        }
+        #message {
+            width: 80%;
+            padding: 10px;
+        }
+        #send {
+            width: 18%;
+            padding: 10px;
+        }
+        #logout {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Chat</h1>
+    <div id="chat"></div>
+    <input type="text" id="message" placeholder="Type your message here...">
+    <button id="send">Send</button>
+    <button id="logout">Logout</button>
+
+    <script>
+        // ↓ very bad code bro ! ↓
+        const wsUrl = "ws://" + window.location.host + "/ws";
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = function () {
+            console.log("WebSocket connection established.");
+        };
+
+        ws.onmessage = function (event) {
+            const chat = document.getElementById("chat");
+            const messageData = JSON.parse(event.data);
+
+            const messageElement = document.createElement("div");
+            messageElement.innerHTML = `<strong>${messageData.username}:</strong> ${messageData.message}`;
+            chat.appendChild(messageElement);
+            chat.scrollTop = chat.scrollHeight;
+        };
+
+        ws.onerror = function (error) {
+            console.error("WebSocket error:", error);
+        };
+
+        ws.onclose = function () {
+            console.log("WebSocket connection closed.");
+        };
+
+        document.getElementById("send").onclick = function () {
+            const message = document.getElementById("message").value;
+            if (message && ws.readyState === WebSocket.OPEN) {
+                const username = getUsername();
+                const payload = JSON.stringify({ username, message });
+                ws.send(payload);
+                document.getElementById("message").value = "";
+            } else {
+                console.error("WebSocket is not open. Current state:", ws.readyState);
+            }
+        };
+
+        document.getElementById("message").onkeypress = function (event) {
+            if (event.key === "Enter") {
+                document.getElementById("send").click();
+            }
+        };
+
+        document.getElementById("logout").onclick = function () {
+            fetch("/api/logout", { method: "GET" })
+                .then(() => {
+                    window.location.href = "/";
+                })
+                .catch((error) => {
+                    console.error("Logout failed:", error);
+                });
+        };
+
+        function getUsername() {
+            const cookie = document.cookie.split('; ').find(row => row.startsWith('jwt='));
+            if (!cookie) {
+                console.error("JWT cookie not found.");
+                return "Anonymous";
+            }
+
+            const token = cookie.split('=')[1];
+            try {
+                const payloadBase64 = token.split('.')[1];
+                const payload = JSON.parse(atob(payloadBase64));
+                return payload.username || "Anonymous";
+            } catch (error) {
+                console.error("Failed to decode JWT:", error);
+                return "Anonymous";
+            }
+        }
+    </script>
+</body>
+</html>
