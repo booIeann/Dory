@@ -40,7 +40,7 @@ func LoginHandler(c *fiber.Ctx) error {
 	cookie.Name = "jwt"
 	cookie.Value = token
 	cookie.HTTPOnly = false
-	cookie.Expires = time.Now().Add(24 * time.Hour)
+	cookie.Expires = time.Now().Add(6 * time.Hour)
 	cookie.Path = "/"
 	c.Cookie(cookie)
 
